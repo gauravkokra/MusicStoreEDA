@@ -200,13 +200,49 @@
       INNER JOIN genre g ON t.genre_id = g.genre_id
       GROUP BY 1,2
       ORDER BY 1,3 DESC;
-	  
-
+      
+      -- Now we are getting all the genre purchases but we want only the top purchased genre for each country.
+	  -- So we will use rank function partition will be done on country basis and ordering will be done on purchasing basis  
+      
+      WITH RankTable AS (
+      
+		  SELECT i.billing_country, g.name,
+		  RANK () OVER ( PARTITION BY i.billing_country ORDER BY COUNT(il.invoice_line_id) DESC) AS RankOf,
+		  COUNT(il.invoice_line_id) AS No_Of_Purchases
+		  FROM invoice i
+		  INNER JOIN invoice_line il ON i.invoice_id = il.invoice_id
+		  INNER JOIN track t ON il.track_id = t.track_id
+		  INNER JOIN genre g ON t.genre_id = g.genre_id
+		  -- WHERE RankOf = '1'
+		  GROUP BY 1,2
+		  ORDER BY COUNT(il.invoice_line_id) DESC
+          
+          )
+          
+	  SELECT * 
+	  FROM RankTable
+	  WHERE RankOf = 1;
+          
+      
 # 11. Write a query to that determines the customer that has spent the most on music for each country.
 #     Write a query that returns the country along with the top customer and how much they spent. 
 # 	  For countries where the top amount spent is shared, provide all customers who spent this amount. 
      
-
+	  WITH RankTable2 AS (
+      
+		  SELECT i.billing_country ,c.first_name,c.last_name, sum(i.total) AS Amount_Spent,
+		  RANK () OVER (PARTITION BY i.billing_country ORDER BY sum(i.total) DESC) AS RankOf
+		  FROM customer c
+		  INNER JOIN invoice i ON c.customer_id = i.customer_id
+		  GROUP BY 1,2,3
+		  ORDER BY sum(i.total) DESC
+          
+          )
+          
+	  SELECT * 
+      FROM RankTable2
+      WHERE RankOf = 1;
+      
 
     
     
